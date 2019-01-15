@@ -26,6 +26,8 @@ const {
   info,
 } = require('./cli-helper');
 const { loadChain } = require('./chains.js');
+const { signTypedDatav3 } = require('./utils');
+const { loadJSONFile } = require('./fs');
 
 const debug = Debug('iexec:iexec-wallet');
 const objName = 'wallet';
@@ -45,7 +47,9 @@ create
         Object.assign({}, { force }, walletOptions),
       );
       spinner.succeed(
-        `wallet saved in "${res.fileName}":\n${pretty(res.wallet)}`,
+        `Your wallet address is ${res.address}\nwallet saved in "${
+          res.fileName
+        }":\n${pretty(res.wallet)}`,
         { raw: res },
       );
       spinner.warn('You must backup your wallet file in a safe place!');
@@ -70,7 +74,9 @@ importPk
         Object.assign({}, { force }, walletOptions),
       );
       spinner.succeed(
-        `wallet saved in "${res.fileName}":\n${pretty(res.wallet)}`,
+        `Your wallet address is ${res.address}\nwallet saved in "${
+          res.fileName
+        }":\n${pretty(res.wallet)}`,
         { raw: res },
       );
       spinner.warn('You must backup your wallet file in a safe place!');
@@ -284,5 +290,28 @@ sweep
       handleError(error, cli, cmd);
     }
   });
+
+const sign = cli.command('sign');
+addGlobalOptions(sign);
+addWalletLoadOptions(sign);
+sign.action(async (cmd) => {
+  const spinner = Spinner(cmd);
+  try {
+    // const dataString = '{"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"}],"Challenge":[{"name":"challenge","type":"string"}]},"domain":{"name":"iExec Gateway","version":"1","chainId":"42"},"primaryType":"Challenge","message":{"challenge":"\\nSign this message to log into iExec Gateway\\n\\nID: BVgHBtENbhWFE1khcbmvC5WxuROyD6Zl"}}';
+    // const typedData = JSON.parse(dataString);
+    const typedData = await loadJSONFile('typedData.json');
+
+    const walletOptions = await computeWalletLoadOptions(cmd);
+    const keystore = Keystore(walletOptions);
+    const chain = await loadChain(cmd.chain, keystore, { spinner });
+    const signature = await signTypedDatav3(
+      chain.ethSigner.provider._web3Provider,
+      typedData,
+    );
+    spinner.succeed(signature, { raw: { signature } });
+  } catch (error) {
+    handleError(error, cli, cmd);
+  }
+});
 
 help(cli);

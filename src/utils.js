@@ -307,4 +307,5 @@ module.exports = {
   http,
   getSalt,
   NULL_ADDRESS,
+  signTypedDatav3,
 };
