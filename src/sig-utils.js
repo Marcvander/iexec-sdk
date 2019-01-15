@@ -267,9 +267,7 @@ const getStructType = (primaryType, members) => {
 const hashStruct = (primaryType, members, obj) => {
   const type = getStructType(primaryType, members);
   const typeHash = ethersKeccak256(Buffer.from(type, 'utf8'));
-  const types = ['bytes32'].concat(
-    members.map(e => (e.type === 'string' ? 'bytes32' : e.type)),
-  );
+  const types = ['bytes32'].concat(members.map(e => e.type));
   const values = [typeHash].concat(
     members.map((e) => {
       if (e.type === 'string') return ethersKeccak256(Buffer.from(obj[e.name], 'utf8'));
